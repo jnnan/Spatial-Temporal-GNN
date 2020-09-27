@@ -1,0 +1,21 @@
+dcrnn:
+  batch_size: 64
+  num_epochs: 100
+  model_name: 'dcrnn'
+  save_name: 'metr-la'
+  data_dir: 'data/METR-LA'
+  adj_dir: 'data/METR-LA/adj.pkl'
+  input_size: 2
+  hidden_size: 64
+  output_size: 1
+  num_nodes: 207
+  max_diffusion_step: 2
+  filter_type: dual_random_walk
+  num_filters: 2
+  num_layers: 2
+  seq_input: 12
+  seq_output: 12
+  cl_decay: 2300
+  learning_rate: 0.0003
+  weight_decay: 0.001
+  loss_function: "masked_mse_loss"
