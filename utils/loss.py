@@ -1,6 +1,7 @@
 import torch.nn as nn
 import numpy as np
 import torch
+from utils.util import convert_to_gpu
 
 
 class MSELoss(nn.Module):
@@ -95,6 +96,19 @@ def masked_rmse_torch(preds, labels, null_val=np.nan):
     :return:
     """
     return torch.sqrt(masked_mse_torch(preds=preds, labels=labels, null_val=null_val))
+
+
+def create_loss(loss_type, **kwargs):
+    if loss_type == 'mse_loss':
+        return convert_to_gpu(MSELoss())
+    elif loss_type == 'bce_loss':
+        return convert_to_gpu(BCELoss())
+    elif loss_type == 'masked_rmse_loss':
+        return masked_rmse_loss(kwargs['scaler'], 0.0)
+    elif loss_type == 'masked_mse_loss':
+        return masked_mse_loss(kwargs['scaler'], 0.0)
+    else:
+        raise ValueError("Unknown loss function.")
 
 
 # Builds loss function.

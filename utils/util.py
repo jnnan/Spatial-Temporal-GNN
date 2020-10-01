@@ -60,3 +60,25 @@ def create_diffusion_supports(mx, K, num_nodes):
             m_out.append(x0)
     m_out = convert_to_gpu(torch.stack(m_out, 0))
     return m_out
+
+
+def create_kernel(args):
+    _, _, adj = load_graph_data(args['adj_dir'])
+    K = args['max_diffusion_step']
+    kernals = []
+    kernals.append(calculate_random_walk_matrix(adj).T)
+    kernals.append(calculate_random_walk_matrix(adj.T).T)
+    supports = create_diffusion_supports(kernals, K, args['num_nodes'])
+    return supports
+
+
+def create_diffusion_supports_dense(mx, K, num_nodes):
+    m_out = []
+    for m in mx:
+        x0 = convert_to_gpu(torch.eye(num_nodes))
+        m_out.append(x0)
+        for _ in range(K):
+            x0 = torch.mm(m, x0)
+            m_out.append(x0)
+    m_out = convert_to_gpu(torch.stack(m_out, 0))
+    return m_out
