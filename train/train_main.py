@@ -57,9 +57,9 @@ def train_main(args):
             tqdm_loader = tqdm(enumerate(data_loaders[phase]))
             ite = 0
             for step, (features, truth_data) in tqdm_loader:
-                ite = ite + 1
+                """ ite = ite + 1
                 if ite > 10:
-                    break
+                    break """
                 features = convert_to_gpu(features)
                 truth_data = convert_to_gpu(truth_data)
                 kwargs['global_step'] += (1 if phase == 'train' else 0)

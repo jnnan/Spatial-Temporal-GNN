@@ -5,7 +5,7 @@ general:
   save_name: 'metr-la'
   data_dir: '../data/METR-LA'
   adj_dir: '../data//METR-LA/adj.pkl'
-  log_on: True
+  log_on: False
 
 dcrnn:
   model_name: "DCRNNmodel"
