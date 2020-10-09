@@ -1,7 +1,7 @@
 general:
   method: "graphwave"
   batch_size: 64
-  num_epochs: 5
+  num_epochs: 100
   save_name: 'metr-la'
   data_dir: '../data/METR-LA'
   adj_dir: '../data//METR-LA/adj.pkl'
@@ -24,6 +24,7 @@ dcrnn:
   weight_decay: 0.001
   loss_function: "masked_rmse_loss"
   lr_decay: 0.1
+  lr_decay_period: 10
 
 
 graphwave:
@@ -42,3 +43,25 @@ graphwave:
   weight_decay: 0.001
   loss_function: "masked_rmse_loss"
   lr_decay: 1
+  lr_decay_period: 10
+  dropout: 0.3
+
+
+stgcn:
+  model_name: "STGCNModel"
+  input_size: 2
+  tcn_size: 64
+  gcn_size: 16
+  num_nodes: 207
+  max_diffusion_step: 2
+  Kt: 3
+  filter_type: "cheb"
+  num_filters: 1
+  seq_input: 12
+  seq_output: 12
+  learning_rate: 0.001
+  weight_decay: 0.001
+  loss_function: "masked_rmse_loss"
+  lr_decay: 0.7
+  lr_decay_period: 5
+  dropout: 0.2

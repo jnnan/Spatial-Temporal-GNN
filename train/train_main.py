@@ -1,16 +1,13 @@
-import os
-import shutil
 import torch
 import copy
-import time
 from torch import optim
 from tqdm import tqdm
-from torch.utils.tensorboard import SummaryWriter
 
 # from utils.metric import calculate_metrics
 from data_loader.data_container import load_dataset
 from model.graphconv_model import GraphWavenet
 from model.dcrnn_model import DCRNNmodel
+from model.stgcn_model import STGCNModel
 from utils.util import create_kernel, convert_to_gpu
 from utils.loss_new import create_loss, calculate_scores
 from utils.result_writer import ResultWriter
@@ -32,11 +29,12 @@ def train_main(args):
 
     loss_funcs = create_loss()
 
-    optimizer = optim.Adam(model.parameters(), lr=args['learning_rate'], weight_decay=args['weight_decay'])
+    # optimizer = optim.Adam(model.parameters(), lr=args['learning_rate'], weight_decay=args['weight_decay'])
+    optimizer = optim.RMSprop(model.parameters(), lr=args['learning_rate'])
 
     save_dict, worst_rmse = {'model_state_dict': copy.deepcopy(model.state_dict()), 'epoch': 0}, torch.tensor(100000)
     # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=.2, patience=5, threshold=1e-3, min_lr=1e-6)
-    scheduler = optim.lr_scheduler.StepLR(optimizer, 10, args['lr_decay'])
+    scheduler = optim.lr_scheduler.StepLR(optimizer, args['lr_decay_period'], args['lr_decay'])
 
     kwargs = {'scaler': scaler, 'global_step': 0}
     phases = ['train', 'val', 'test']
@@ -58,7 +56,7 @@ def train_main(args):
             ite = 0
             for step, (features, truth_data) in tqdm_loader:
                 """ ite = ite + 1
-                if ite > 10:
+                if ite > 2:
                     break """
                 features = convert_to_gpu(features)
                 truth_data = convert_to_gpu(truth_data)

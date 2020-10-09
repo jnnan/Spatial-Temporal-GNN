@@ -40,6 +40,31 @@ def build_sparse_matrix(L):
     return torch.sparse.FloatTensor(i, v, torch.Size(shape))
 
 
+def calculate_normalized_laplacian(adj_mx):
+    adj_mx = np.maximum.reduce([adj_mx, adj_mx.T])
+    # adj_mx = sp.coo_matrix(adj_mx)
+    d = np.array(adj_mx.sum(1))
+    d_inv_sqrt = np.power(d, -0.5).flatten()
+    d_inv_sqrt[np.isinf(d_inv_sqrt)] = 0.
+    d_mat_inv_sqrt = np.diag(d_inv_sqrt)
+    normalized_laplacian = -d_mat_inv_sqrt.dot(adj_mx).dot(d_mat_inv_sqrt)
+    # I = sp.identity(normalized_laplacian.shape, format='coo', dtype=normalized_laplacian.dtype)
+    return torch.tensor(normalized_laplacian)
+
+
+def create_cheb_supports(mx, K):
+    supports = []
+    x0 = torch.eye(mx.shape[0])
+    supports.append(x0)
+    x1 = torch.sparse.mm(mx, x0)
+    supports.append(x1)
+    for k in range(2, K + 1):
+        x2 = 2 * torch.sparse.mm(mx, x1) - x0
+        supports.append(x2)
+        x1, x0 = x2, x1
+    return convert_to_gpu(torch.stack(supports, dim=0))
+
+
 def calculate_random_walk_matrix(adj_mx):
     # adj_mx = sp.coo_matrix(adj_mx)
     d = np.array(adj_mx.sum(1))
@@ -64,12 +89,19 @@ def create_diffusion_supports(mx, K, num_nodes):
 
 def create_kernel(args):
     _, _, adj = load_graph_data(args['adj_dir'])
-    K = args['max_diffusion_step']
-    kernals = []
-    kernals.append(calculate_random_walk_matrix(adj).T)
-    kernals.append(calculate_random_walk_matrix(adj.T).T)
-    supports = create_diffusion_supports(kernals, K, args['num_nodes'])
-    return supports
+    if (args['filter_type'] == "dual_random_walk"):
+        K = args['max_diffusion_step']
+        kernals = []
+        kernals.append(calculate_random_walk_matrix(adj).T)
+        kernals.append(calculate_random_walk_matrix(adj.T).T)
+        supports = create_diffusion_supports(kernals, K, args['num_nodes'])
+        return supports
+    if (args['filter_type'] == "cheb"):
+        # K = args['max_cheb_order']
+        K = args['max_diffusion_step']
+        kernal = calculate_normalized_laplacian(adj)
+        supports = create_cheb_supports(kernal, K)
+        return supports
 
 
 def create_diffusion_supports_dense(mx, K, num_nodes):

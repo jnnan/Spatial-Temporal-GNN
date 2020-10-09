@@ -8,9 +8,10 @@ class ResultWriter:
         str_time = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
         self.model_folder = f"results/{str_time}/save_models"
         tensorboard_folder = f"results/{str_time}/runs"
-        os.makedirs(self.model_folder, exist_ok=True)
-        os.makedirs(tensorboard_folder, exist_ok=True)
-        self.writer = SummaryWriter(tensorboard_folder)
+        if log_on:
+            os.makedirs(self.model_folder, exist_ok=True)
+            os.makedirs(tensorboard_folder, exist_ok=True)
+            self.writer = SummaryWriter(tensorboard_folder)
         self.log_on = log_on
 
     def add_scalar(self, path, scaler, step):
@@ -18,7 +19,9 @@ class ResultWriter:
             self.writer.add_scalar(path, scaler, step)
 
     def flush(self):
-        self.writer.flush()
+        if self.log_on:
+            self.writer.flush()
 
     def close(self):
-        self.writer.close()
+        if self.log_on:
+            self.writer.close()

@@ -14,10 +14,11 @@ class GraphWavenet(nn.Module):
         self.num_matrices = (args['max_diffusion_step'] + 1) * 3
         self.max_diffusion_step = args['max_diffusion_step']
         self.num_nodes = args['num_nodes']
+        self.dropout = args['dropout']
         STLayers = []
         for i in range(4):
             for j in range(1, 3):
-                STLayers.append(STLayer(args['hidden_size'], args['hidden_size'], args['skip_size'], j, self.num_matrices))
+                STLayers.append(STLayer(args['hidden_size'], args['hidden_size'], args['skip_size'], j, self.num_matrices, self.dropout))
         self.STLayers = nn.ModuleList(STLayers)
         self.init_linear = nn.Conv2d(args['input_size'], args['hidden_size'], (1, 1))
         self.end_conv_1 = nn.Conv2d(args['skip_size'], args['end_size'], kernel_size=(1, 1), bias=True)
@@ -41,11 +42,11 @@ class GraphWavenet(nn.Module):
 
 
 class STLayer(nn.Module):
-    def __init__(self, input_size, output_size, skip_size, dilation, num_matrices):
+    def __init__(self, input_size, output_size, skip_size, dilation, num_matrices, dropout):
         super(STLayer, self).__init__()
         self.tcn1 = nn.Conv2d(input_size, output_size, (1, 2), dilation=dilation)
         self.tcn2 = nn.Conv2d(input_size, output_size, (1, 2), dilation=dilation)
-        self.gcn = GraphConv(output_size, output_size, num_matrices)
+        self.gcn = GraphConv(output_size, output_size, num_matrices, dropout)
         self.skip_linear = nn.Conv1d(output_size, skip_size, 1)
         self.bn = nn.BatchNorm2d(output_size)
 
@@ -57,10 +58,11 @@ class STLayer(nn.Module):
 
 
 class GraphConv(nn.Module):
-    def __init__(self, input_size, output_size, num_matrices):
+    def __init__(self, input_size, output_size, num_matrices, dropout):
         super(GraphConv, self).__init__()
         self.weight = nn.Parameter(torch.FloatTensor(size=(num_matrices, input_size, output_size)))
         self.bias = nn.Parameter(torch.FloatTensor(size=(output_size,)))
+        self.dropout = dropout
         nn.init.xavier_normal_(self.weight.data, gain=1.414)
         nn.init.constant_(self.bias.data, val=0.0)
 
@@ -70,4 +72,5 @@ class GraphConv(nn.Module):
         aggr = torch.einsum('khw,bfwt->bkfht', supports, inputs)
         output = torch.einsum('bkfht,kfo->boht', aggr, self.weight)
         output = torch.transpose(torch.transpose(output, dim0=1, dim1=3) + self.bias, dim0=1, dim1=3)
+        output = F.dropout(output, self.dropout, training=self.training)
         return output
